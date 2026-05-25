@@ -1,7 +1,6 @@
 # 🏥 Smart Health Insurance Plan Recommendation System
 ---
 
----
 
 ## 📌 Problem Statement
 Many individuals select health insurance plans randomly or based on incomplete information, leading to overpayment, insufficient coverage, or claims rejection. This project builds a **data-driven recommendation system** that analyzes user demographics, health indicators, and lifestyle to suggest the most suitable insurance plan.
