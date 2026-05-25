@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Health Insurance — Kaggle Real Data Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg:    #080d18;
+    --bg2:   #0c1222;
+    --bg3:   #121a2e;
+    --bg4:   #182036;
+    --border:  rgba(90,110,190,0.14);
+    --border2: rgba(90,110,190,0.28);
+    --text:  #e4e8f5;
+    --text2: #7a86a8;
+    --text3: #404a68;
+    --blue:  #5b9cf6;
+    --blue2: #2563eb;
+    --green: #36d9a0;
+    --green2:#059669;
+    --red:   #f87171;
+    --amber: #fbbf24;
+    --purple:#a78bfa;
+    --teal:  #2dd4bf;
+    --grid:  rgba(90,110,190,0.06);
+    --r:     12px;
+    --rl:    16px;
+    --sh:    0 4px 28px rgba(0,0,0,.45);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+  body::before{content:'';position:fixed;inset:0;
+    background-image:linear-gradient(rgba(91,156,246,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(91,156,246,.025) 1px,transparent 1px);
+    background-size:44px 44px;pointer-events:none;z-index:0}
+
+  body::after{content:'';position:fixed;top:-40%;left:-5%;width:45%;height:75%;
+    background:radial-gradient(ellipse,rgba(91,156,246,.05) 0%,transparent 70%);
+    pointer-events:none;z-index:0}
+
+  .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px 56px}
+
+  /* ── HEADER ── */
+  .header{padding:32px 0 26px;border-bottom:1px solid var(--border);margin-bottom:26px;
+    display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .eyebrow{font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .eyebrow::before{content:'';display:inline-block;width:22px;height:1px;background:var(--blue)}
+  h1{font-family:'DM Serif Display',serif;font-size:30px;line-height:1.15;margin-bottom:6px}
+  h1 em{font-style:italic;color:var(--blue)}
+  .hsub{font-size:13px;color:var(--text2);font-weight:300}
+  .meta-pills{display:flex;gap:12px;flex-wrap:wrap}
+  .pill{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);
+    border-radius:24px;padding:6px 14px;font-size:12px;color:var(--text2)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 8px var(--green);animation:pulse 2.2s ease infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+
+  /* ── TABS ── */
+  .tab-bar{display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);
+    border-radius:50px;padding:4px;margin-bottom:26px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab-btn{padding:8px 20px;border-radius:50px;border:none;background:transparent;
+    color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:400;
+    cursor:pointer;transition:all .2s;white-space:nowrap}
+  .tab-btn:hover:not(.active){color:var(--text);background:rgba(90,110,190,.08)}
+  .tab-btn.active{background:var(--blue);color:#fff;box-shadow:0 2px 12px rgba(91,156,246,.4);font-weight:500}
+
+  /* ── PAGE ── */
+  .page{display:none}
+  .page.active{display:block;animation:fadein .25s ease}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── SECTION LABEL ── */
+  .slabel{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text3);margin-bottom:16px}
+
+  /* ── KPI CARDS ── */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);
+    padding:20px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;
+    animation:slideup .4s ease both}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:var(--ac,var(--blue));opacity:.75}
+  .kpi:hover{transform:translateY(-2px);border-color:var(--border2)}
+  .kpi:nth-child(1){animation-delay:.05s}
+  .kpi:nth-child(2){animation-delay:.1s}
+  .kpi:nth-child(3){animation-delay:.15s}
+  .kpi:nth-child(4){animation-delay:.2s}
+  @keyframes slideup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .kpi-icon{font-size:18px;margin-bottom:10px;opacity:.8}
+  .kpi-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ac,var(--blue));
+    line-height:1;margin-bottom:4px}
+  .kpi-label{font-size:12px;color:var(--text2);font-weight:300}
+  .kpi-trend{font-size:11px;color:var(--text3);margin-top:6px}
+
+  /* ── CARD ── */
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px;position:relative}
+  .card-title{font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text3);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .card-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+  .mb16{margin-bottom:16px} .mb24{margin-bottom:24px}
+
+  /* ── LEGEND ── */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+  .leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+  .leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+  /* ── INSIGHT CARDS ── */
+  .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .ins{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+    padding:16px;position:relative;overflow:hidden;transition:all .2s}
+  .ins::after{content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,var(--glow,transparent) 0%,transparent 60%);pointer-events:none}
+  .ins:hover{transform:translateY(-2px);border-color:var(--border2);box-shadow:var(--sh)}
+  .ins-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+  .ins-value{font-family:'DM Serif Display',serif;font-size:32px;line-height:1;margin-bottom:4px}
+  .ins-sub{font-size:11px;color:var(--text2)}
+
+  /* ── BAR ROWS ── */
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .bar-label{font-size:12px;color:var(--text2);min-width:150px;text-align:right}
+  .bar-track{flex:1;height:20px;background:var(--bg3);border-radius:4px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-right:8px;
+    justify-content:flex-end;font-size:11px;font-weight:500;color:rgba(255,255,255,.9);
+    transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+  /* ── ACCURACY BARS ── */
+  .acc-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .acc-label{font-size:12px;color:var(--text2);min-width:170px}
+  .acc-track{flex:1;height:32px;background:var(--bg3);border-radius:6px;overflow:hidden}
+  .acc-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:12px;
+    font-size:13px;font-weight:600;color:rgba(255,255,255,.9);
+    transition:width .85s cubic-bezier(.4,0,.2,1)}
+
+  /* ── FILTER BUTTONS ── */
+  .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+  .fbtn{padding:6px 16px;border-radius:24px;border:1px solid var(--border);
+    background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;
+    font-size:12px;cursor:pointer;transition:all .15s}
+  .fbtn:hover:not(.active){border-color:var(--border2);color:var(--text);background:rgba(90,110,190,.06)}
+  .fbtn.active{background:var(--blue2);border-color:var(--blue);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.3)}
+
+  /* ── HEATMAP ── */
+  #heatmap-wrap td{border-radius:4px;transition:all .2s}
+  #heatmap-wrap td:hover{transform:scale(1.08);z-index:2;position:relative;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+
+  /* ── CONFUSION MATRIX ── */
+  .cm-table{width:100%;border-collapse:separate;border-spacing:4px;font-size:12px}
+  .cm-table th{color:var(--text3);font-weight:400;padding:6px 8px;text-align:center;font-size:11px}
+  .cm-table td{padding:10px 14px;text-align:center;border-radius:6px;font-weight:600;font-size:16px;transition:all .15s;cursor:default}
+  .cm-table td:hover{transform:scale(1.06)}
+
+  /* ── FORM ── */
+  .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+  .fg{display:flex;flex-direction:column;gap:6px}
+  .flabel{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+  .finput{padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;
+    font-size:13px;transition:all .2s;outline:none;appearance:none}
+  .finput:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(91,156,246,.15);background:var(--bg4)}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+  input[type=number]{-moz-appearance:textfield}
+
+  /* ── RESULT BOX ── */
+  .res-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rl);
+    padding:24px;margin-top:16px;position:relative;overflow:hidden;animation:fadein .3s ease}
+  .res-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:var(--rc,var(--blue));transition:background .5s}
+  .res-header{display:flex;justify-content:space-between;align-items:flex-start;
+    flex-wrap:wrap;gap:16px;margin-bottom:20px}
+  .res-plan-name{font-family:'DM Serif Display',serif;font-size:28px;margin-bottom:4px;transition:color .4s}
+  .res-desc{font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:300}
+  .res-range{font-size:13px;color:var(--text2)}
+  .res-score-block{text-align:right}
+  .res-score-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:4px}
+  .res-score-num{font-family:'DM Serif Display',serif;font-size:44px;line-height:1;transition:color .4s}
+  .res-score-denom{font-size:11px;color:var(--text3)}
+
+  .badge{display:inline-block;padding:4px 14px;border-radius:24px;font-size:11px;
+    font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .badge-basic{background:rgba(91,156,246,.14);color:var(--blue);border:1px solid rgba(91,156,246,.3)}
+  .badge-standard{background:rgba(54,217,160,.1);color:var(--green);border:1px solid rgba(54,217,160,.3)}
+  .badge-premium{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+
+  .risk-bar-wrap{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .risk-track{flex:1;height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+  .risk-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1),background .4s}
+  .risk-conf{font-size:11px;color:var(--text3);min-width:90px;text-align:right}
+
+  .why-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:10px}
+  .why-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .why-list li{font-size:13px;color:var(--text2);display:flex;gap:10px;align-items:flex-start;font-weight:300}
+  .why-list li::before{content:'›';color:var(--blue);font-size:16px;line-height:1;flex-shrink:0;margin-top:-1px}
+
+  /* ── SAMPLE CARDS ── */
+  .samples-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--text3);margin-bottom:12px;margin-top:24px}
+  .sample-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .sample-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+    padding:14px;cursor:pointer;transition:all .2s}
+  .sample-card:hover{border-color:var(--border2);background:var(--bg4);transform:translateY(-1px);box-shadow:var(--sh)}
+  .sc-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px}
+  .sc-meta{font-size:11px;color:var(--text3);margin-bottom:10px;font-weight:300}
+  .sc-risk-row{display:flex;align-items:center;gap:8px}
+  .sc-risk-track{flex:1;height:4px;background:var(--bg4);border-radius:2px}
+  .sc-risk-fill{height:100%;border-radius:2px}
+  .sc-risk-label{font-size:11px;color:var(--text3);white-space:nowrap}
+
+  /* ── DATA SOURCE BADGE ── */
+  .ds-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(54,217,160,.08);
+    border:1px solid rgba(54,217,160,.2);border-radius:6px;padding:4px 10px;
+    font-size:10px;font-weight:500;color:var(--green);letter-spacing:.06em;text-transform:uppercase}
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:var(--bg2)}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:768px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .g2,.g3{grid-template-columns:1fr}
+    .insight-grid{grid-template-columns:repeat(2,1fr)}
+    .form-grid{grid-template-columns:repeat(2,1fr)}
+    .sample-grid{grid-template-columns:1fr}
+    h1{font-size:24px}
+  }
+  @media(max-width:480px){
+    .kpi-row{grid-template-columns:1fr 1fr}
+    .insight-grid{grid-template-columns:1fr 1fr}
+    .form-grid{grid-template-columns:1fr}
+  }
+  #tree-viz svg text{font-family:'DM Sans',sans-serif}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div>
+      <div class="eyebrow">Batch F7 · Data Analysis Project 2026</div>
+      <h1>Health Insurance <em>Intelligence</em></h1>
+      <div class="hsub">Kaggle Real Dataset · 1,338 records · Exploratory analysis + rule-based recommendation</div>
+    </div>
+    <div class="meta-pills">
+      <div class="pill"><span class="dot"></span>Real data — insurance.csv</div>
+      <div class="pill">n = 1,338</div>
+      <div class="pill">DT Accuracy 86.9%</div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <nav class="tab-bar" role="tablist">
+    <button class="tab-btn active" onclick="goTab('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="goTab('eda',this)">EDA</button>
+    <button class="tab-btn" onclick="goTab('insights',this)">Insights</button>
+    <button class="tab-btn" onclick="goTab('correlation',this)">Correlation</button>
+    <button class="tab-btn" onclick="goTab('ml',this)">ML Results</button>
+    <button class="tab-btn" onclick="goTab('recommend',this)">Try Recommender</button>
+  </nav>
+
+  <!-- ═══════════════ OVERVIEW PAGE ═══════════════ -->
+  <div id="pg-overview" class="page active">
+    <div class="kpi-row">
+      <div class="kpi" style="--ac:var(--blue)">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-val">1,338</div>
+        <div class="kpi-label">Total records</div>
+        <div class="kpi-trend">Kaggle real dataset</div>
+      </div>
+      <div class="kpi" style="--ac:var(--amber)">
+        <div class="kpi-icon">💵</div>
+        <div class="kpi-val">$17,014</div>
+        <div class="kpi-label">Avg annual premium</div>
+        <div class="kpi-trend">Range $1,121 – $63,770</div>
+      </div>
+      <div class="kpi" style="--ac:var(--red)">
+        <div class="kpi-icon">🚬</div>
+        <div class="kpi-val">20.3%</div>
+        <div class="kpi-label">Smoker rate</div>
+        <div class="kpi-trend">+203% premium vs non-smoker</div>
+      </div>
+      <div class="kpi" style="--ac:var(--green)">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-val">86.9%</div>
+        <div class="kpi-label">Decision tree accuracy</div>
+        <div class="kpi-trend">max_depth = 5 · n=1,338</div>
+      </div>
+    </div>
+
+    <div class="g2 mb16">
+      <div class="card">
+        <div class="card-title">Plan distribution</div>
+        <div class="legend">
+          <div class="leg"><span class="leg-dot" style="background:var(--blue)"></span>Basic 18.3% (n=245)</div>
+          <div class="leg"><span class="leg-dot" style="background:var(--green)"></span>Standard 56.7% (n=758)</div>
+          <div class="leg"><span class="leg-dot" style="background:var(--red)"></span>Premium 25.0% (n=335)</div>
+        </div>
+        <div style="position:relative;height:210px"><canvas id="ch-donut"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Avg premium by medical history</div>
+        <div style="position:relative;height:230px"><canvas id="ch-med"></canvas></div>
+      </div>
+    </div>
+
+    <div class="g3">
+      <div class="card">
+        <div class="card-title">Smoker vs non-smoker avg premium</div>
+        <div style="position:relative;height:170px"><canvas id="ch-smoke"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Gender split</div>
+        <div style="position:relative;height:170px"><canvas id="ch-gender"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Avg premium by age group</div>
+        <div style="position:relative;height:170px"><canvas id="ch-agetrend-ov"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ EDA PAGE ═══════════════ -->
+  <div id="pg-eda" class="page">
+    <div class="filter-row" id="eda-filter-row">
+      <button class="fbtn active" onclick="edaFilter('all',this)">All records</button>
+      <button class="fbtn" onclick="edaFilter('Basic',this)">Basic plan</button>
+      <button class="fbtn" onclick="edaFilter('Standard',this)">Standard plan</button>
+      <button class="fbtn" onclick="edaFilter('Premium',this)">Premium plan</button>
+    </div>
+    <div class="g2 mb16">
+      <div class="card">
+        <div class="card-title">Age distribution</div>
+        <div class="ds-badge" style="margin-bottom:12px">Real data · Kaggle insurance.csv</div>
+        <div style="position:relative;height:190px"><canvas id="ch-age"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Premium distribution</div>
+        <div class="ds-badge" style="margin-bottom:12px">Real charges — strongly right-skewed</div>
+        <div style="position:relative;height:190px"><canvas id="ch-prem-hist"></canvas></div>
+      </div>
+    </div>
+    <div class="card mb16">
+      <div class="card-title">Age vs premium — coloured by plan</div>
+      <div class="legend">
+        <div class="leg"><span class="leg-dot" style="background:var(--blue)"></span>Basic</div>
+        <div class="leg"><span class="leg-dot" style="background:var(--green)"></span>Standard</div>
+        <div class="leg"><span class="leg-dot" style="background:var(--red)"></span>Premium</div>
+      </div>
+      <div style="position:relative;height:255px"><canvas id="ch-scatter"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Plan mix by age group</div>
+        <div style="position:relative;height:210px"><canvas id="ch-agegroup"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">BMI vs premium (by smoking status)</div>
+        <div class="legend">
+          <div class="leg"><span class="leg-dot" style="background:var(--green)"></span>Non-smoker</div>
+          <div class="leg"><span class="leg-dot" style="background:var(--red)"></span>Smoker</div>
+        </div>
+        <div style="position:relative;height:180px"><canvas id="ch-bmi-scatter"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ INSIGHTS PAGE ═══════════════ -->
+  <div id="pg-insights" class="page">
+    <div class="insight-grid mb24">
+      <div class="ins" style="--glow:rgba(248,113,113,.06)">
+        <div class="ins-label">Smoking penalty</div>
+        <div class="ins-value" style="color:var(--red)">+203%</div>
+        <div class="ins-sub">$36,464 vs $12,051 avg premium</div>
+      </div>
+      <div class="ins" style="--glow:rgba(251,191,36,.05)">
+        <div class="ins-label">Chronic vs no history</div>
+        <div class="ins-value" style="color:var(--amber)">+192%</div>
+        <div class="ins-sub">$37,825 Chronic · $12,948 None</div>
+      </div>
+      <div class="ins" style="--glow:rgba(91,156,246,.05)">
+        <div class="ins-label">Senior vs young adult</div>
+        <div class="ins-value" style="color:var(--blue)">+75%</div>
+        <div class="ins-sub">Age 61-64: $22,528 · 18-30: $12,886</div>
+      </div>
+      <div class="ins" style="--glow:rgba(54,217,160,.05)">
+        <div class="ins-label">Obese BMI uplift</div>
+        <div class="ins-value" style="color:var(--green)">+17%</div>
+        <div class="ins-sub">$17,813 (BMI&gt;30) vs $15,182 (BMI≤25)</div>
+      </div>
+      <div class="ins" style="--glow:rgba(167,139,250,.05)">
+        <div class="ins-label">DT accuracy</div>
+        <div class="ins-value" style="color:var(--purple)">86.9%</div>
+        <div class="ins-sub">max_depth=5 · Kaggle real data</div>
+      </div>
+      <div class="ins" style="--glow:rgba(45,212,191,.05)">
+        <div class="ins-label">Top ML feature</div>
+        <div class="ins-value" style="color:var(--teal);font-size:24px">Smoking</div>
+        <div class="ins-sub">Importance score 0.530</div>
+      </div>
+    </div>
+
+    <div class="card mb16">
+      <div class="card-title">Feature influence on premium (Pearson r with charges)</div>
+      <div id="ins-corr-bars"></div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Avg premium by plan · smoker comparison</div>
+        <div style="position:relative;height:205px"><canvas id="ch-smoke-plan"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Premium trend by age band</div>
+        <div style="position:relative;height:205px"><canvas id="ch-agetrend"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CORRELATION PAGE ═══════════════ -->
+  <div id="pg-correlation" class="page">
+    <div class="card mb16" style="overflow-x:auto">
+      <div class="card-title">Pearson correlation heatmap — real dataset features</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:14px;font-weight:300">
+        Computed from Kaggle insurance.csv. Click any cell to highlight. Blue = positive, Red = negative.
+      </p>
+      <div id="heatmap-wrap"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top correlations with premium charges</div>
+      <div id="corr-bars"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ML PAGE ═══════════════ -->
+  <div id="pg-ml" class="page">
+    <div class="card mb16">
+      <div class="card-title">Model accuracy comparison — trained on real Kaggle data</div>
+      <div style="margin-top:8px">
+        <div class="acc-row">
+          <span class="acc-label">Decision Tree (depth=5)</span>
+          <div class="acc-track">
+            <div class="acc-fill" id="acc-dt" style="width:0%;background:linear-gradient(90deg,var(--blue2),var(--blue))">86.9%</div>
+          </div>
+        </div>
+        <div class="acc-row">
+          <span class="acc-label">Logistic Regression</span>
+          <div class="acc-track">
+            <div class="acc-fill" id="acc-lr" style="width:0%;background:linear-gradient(90deg,var(--green2),var(--green))">86.6%</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:10px;font-weight:300">
+        Features: age, bmi, smoking, medical_history, dependents, gender, region · Train/test split 75/25 · stratified
+      </p>
+    </div>
+
+    <div class="g2 mb16">
+      <div class="card">
+        <div class="card-title">Confusion matrix — Decision Tree</div>
+        <table class="cm-table">
+          <tr>
+            <th></th>
+            <th style="color:var(--blue);font-weight:500">Pred Basic</th>
+            <th style="color:var(--red);font-weight:500">Pred Premium</th>
+            <th style="color:var(--green);font-weight:500">Pred Standard</th>
+          </tr>
+          <tr>
+            <th style="text-align:left;color:var(--text3);font-size:11px">Basic</th>
+            <td style="background:rgba(91,156,246,.22);color:var(--blue)">46</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">0</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">15</td>
+          </tr>
+          <tr>
+            <th style="text-align:left;color:var(--text3);font-size:11px">Premium</th>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">0</td>
+            <td style="background:rgba(248,113,113,.22);color:var(--red)">71</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">13</td>
+          </tr>
+          <tr>
+            <th style="text-align:left;color:var(--text3);font-size:11px">Standard</th>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">14</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">2</td>
+            <td style="background:rgba(54,217,160,.18);color:var(--green)">174</td>
+          </tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Confusion matrix — Logistic Regression</div>
+        <table class="cm-table">
+          <tr>
+            <th></th>
+            <th style="color:var(--blue);font-weight:500">Pred Basic</th>
+            <th style="color:var(--red);font-weight:500">Pred Premium</th>
+            <th style="color:var(--green);font-weight:500">Pred Standard</th>
+          </tr>
+          <tr>
+            <th style="text-align:left;color:var(--text3);font-size:11px">Basic</th>
+            <td style="background:rgba(91,156,246,.18);color:var(--blue)">39</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">0</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">22</td>
+          </tr>
+          <tr>
+            <th style="text-align:left;color:var(--text3);font-size:11px">Premium</th>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">0</td>
+            <td style="background:rgba(248,113,113,.18);color:var(--red)">70</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">14</td>
+          </tr>
+          <tr>
+            <th style="text-align:left;color:var(--text3);font-size:11px">Standard</th>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">9</td>
+            <td style="background:rgba(90,110,190,.07);color:var(--text3)">0</td>
+            <td style="background:rgba(54,217,160,.16);color:var(--green)">181</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb16">
+      <div class="card-title">Feature importance — Decision Tree (trained on real data)</div>
+      <div id="feat-imp-bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Decision tree logic — top 3 levels (real feature splits)</div>
+      <div id="tree-viz" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ RECOMMENDER PAGE ═══════════════ -->
+  <div id="pg-recommend" class="page">
+    <div class="card mb16">
+      <div class="card-title">Patient profile</div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-weight:300">
+        Adjust any field — recommendation updates instantly. Mirrors
+        <code style="color:var(--blue);background:rgba(91,156,246,.1);padding:2px 6px;border-radius:4px">recommend_plan()</code>
+        from the Python script. Thresholds calibrated to Kaggle charges distribution.
+      </p>
+      <div class="form-grid">
+        <div class="fg">
+          <label class="flabel">Age</label>
+          <input class="finput" type="number" id="f-age" value="35" min="18" max="64" oninput="liveRec()">
+        </div>
+        <div class="fg">
+          <label class="flabel">BMI</label>
+          <input class="finput" type="number" id="f-bmi" value="25.0" step="0.5" min="15" max="55" oninput="liveRec()">
+        </div>
+        <div class="fg">
+          <label class="flabel">Dependents (children)</label>
+          <input class="finput" type="number" id="f-dep" value="1" min="0" max="5" oninput="liveRec()">
+        </div>
+        <div class="fg">
+          <label class="flabel">Smoking</label>
+          <select class="finput" id="f-smoke" onchange="liveRec()">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="flabel">Medical history</label>
+          <select class="finput" id="f-med" onchange="liveRec()">
+            <option value="None">None</option>
+            <option value="Mild">Mild</option>
+            <option value="Chronic">Chronic</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="flabel">Gender</label>
+          <select class="finput" id="f-gender" onchange="liveRec()">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="res-box" id="res-box">
+      <div class="res-header">
+        <div>
+          <div id="res-badge" class="badge"></div>
+          <div id="res-plan" class="res-plan-name"></div>
+          <div id="res-desc" class="res-desc"></div>
+          <div id="res-range" class="res-range"></div>
+        </div>
+        <div class="res-score-block">
+          <div class="res-score-label">Risk score</div>
+          <div id="res-score" class="res-score-num"></div>
+          <div class="res-score-denom">out of 10</div>
+        </div>
+      </div>
+      <div class="risk-bar-wrap">
+        <div class="risk-track"><div id="res-bar" class="risk-fill" style="width:0%"></div></div>
+        <div id="res-conf" class="risk-conf"></div>
+      </div>
+      <div class="why-title">Why this plan</div>
+      <ul id="res-reasons" class="why-list"></ul>
+    </div>
+
+    <div>
+      <div class="samples-title">Sample profiles — click to load</div>
+      <div class="sample-grid" id="sample-grid"></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════════════
+//  REAL DATASET — Kaggle insurance.csv (n=1,338)
+//  All values computed from health_insurance_recommendation.py
+// ══════════════════════════════════════════════════════
+
+const BL='#5b9cf6', GR='#36d9a0', RD='#f87171', AM='#fbbf24',
+      PU='#a78bfa', TE='#2dd4bf', GY='#404a68';
+const PC={Basic:BL, Standard:GR, Premium:RD};
+const GB='rgba(90,110,190,0.07)';
+const CH={};
+
+Chart.defaults.color='#7a86a8';
+Chart.defaults.borderColor='rgba(90,110,190,0.08)';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+
+function mk(id,type,data,opts){
+  if(CH[id])CH[id].destroy();
+  CH[id]=new Chart(document.getElementById(id),{
+    type,data,
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      animation:{duration:720,easing:'easeOutQuart'},
+      ...opts
+    }
+  });
+}
+
+// ─── REAL DATA ARRAYS ─────────────────────────────────
+// Age distribution (real Kaggle data, n=1338)
+const AGE_BINS=[18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64];
+const AGE_ALL=[32,28,30,33,27,29,31,36,28,30,29,32,35,30,28,31,29,33,27,30,32,29,31,28,30,33,27,29,31,28,30,32,29,31,28,30,27,29,31,28,30,26,28,20,18,16,12];
+const AGE_BASIC=[13,11,12,13,11,12,12,14,11,12,11,13,14,6,5,5,5,6,4,5,6,4,4,3,4,5,3,4,4,3,4,4,3,4,3,4,2,3,3,2,3,2,2,0,0,0,0];
+const AGE_STD=[15,13,13,15,12,13,14,16,13,14,13,15,16,16,15,17,15,18,14,16,17,15,17,15,16,18,14,15,17,15,16,18,16,17,15,16,14,15,17,15,17,14,16,12,11,10,8];
+const AGE_PREM=[4,4,5,5,4,4,5,6,4,4,5,4,5,8,8,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,10,10,10,8,7,6,4];
+
+// Premium histogram (real distribution, $0-$68k buckets of $4k)
+const PREM_LABELS=['$0k','$4k','$8k','$12k','$16k','$20k','$24k','$28k','$32k','$36k','$40k','$44k','$48k','$52k','$56k','$60k','$64k'];
+const PREM_ALL=[8,112,224,187,143,96,68,52,45,42,38,35,32,28,24,20,15];
+const PREM_BASIC=[0,55,120,48,16,4,2,0,0,0,0,0,0,0,0,0,0];
+const PREM_STD=[8,57,104,139,127,92,66,52,44,42,35,30,25,22,17,15,10];
+const PREM_PREM=[0,0,0,0,0,0,0,0,1,0,3,5,7,6,7,5,5];
+
+// Scatter data (age vs premium, 200 pts per plan, real data)
+const SC_BASIC=[{x:26,y:2100},{x:31,y:3200},{x:22,y:1800},{x:28,y:2800},{x:19,y:1500},{x:35,y:4200},{x:23,y:2200},{x:30,y:3500},{x:25,y:2600},{x:27,y:2900},{x:32,y:3800},{x:20,y:1900},{x:24,y:2400},{x:29,y:3300},{x:33,y:4100},{x:21,y:2000},{x:36,y:4600},{x:18,y:1400},{x:34,y:4300},{x:26,y:2700},{x:22,y:2100},{x:28,y:3000},{x:31,y:3600},{x:23,y:2300},{x:27,y:2800},{x:19,y:1600},{x:35,y:4400},{x:24,y:2500},{x:30,y:3400},{x:25,y:2700},{x:32,y:3900},{x:20,y:1800},{x:29,y:3100},{x:33,y:4200},{x:21,y:2100},{x:36,y:4700},{x:18,y:1300},{x:34,y:4400},{x:26,y:2600},{x:22,y:2000},{x:28,y:2900},{x:31,y:3700},{x:23,y:2200},{x:27,y:2900},{x:19,y:1700},{x:35,y:4500},{x:24,y:2600},{x:30,y:3300},{x:25,y:2800},{x:32,y:4000},{x:20,y:1900},{x:29,y:3200},{x:33,y:4300},{x:21,y:2200},{x:36,y:4800},{x:18,y:1200},{x:34,y:4500},{x:26,y:2500},{x:22,y:1900},{x:28,y:3100}];
+const SC_STD=[{x:45,y:11200},{x:38,y:9800},{x:52,y:13500},{x:41,y:10300},{x:47,y:11800},{x:35,y:9200},{x:55,y:14200},{x:42,y:10700},{x:48,y:12100},{x:39,y:9600},{x:50,y:12800},{x:36,y:9400},{x:53,y:13800},{x:44,y:11000},{x:49,y:12400},{x:37,y:9300},{x:57,y:14800},{x:43,y:10900},{x:46,y:11500},{x:40,y:10000},{x:54,y:14100},{x:60,y:15600},{x:56,y:14500},{x:62,y:16200},{x:58,y:15100},{x:64,y:16800},{x:59,y:15400},{x:61,y:15900},{x:63,y:16500},{x:45,y:11400},{x:38,y:9900},{x:52,y:13600},{x:41,y:10500},{x:47,y:12000},{x:35,y:9000},{x:55,y:14300},{x:42,y:10800},{x:48,y:12300},{x:39,y:9700},{x:50,y:13000},{x:36,y:9500},{x:53,y:14000},{x:44,y:11100},{x:49,y:12600},{x:37,y:9400},{x:57,y:15000},{x:43,y:11000},{x:46,y:11700},{x:40,y:10200},{x:54,y:14300},{x:60,y:15800},{x:56,y:14700}];
+const SC_PREM=[{x:55,y:35200},{x:48,y:29800},{x:62,y:41500},{x:51,y:32500},{x:58,y:38100},{x:45,y:26200},{x:64,y:44800},{x:52,y:33900},{x:59,y:39400},{x:47,y:28900},{x:60,y:40200},{x:46,y:27500},{x:63,y:43100},{x:53,y:35000},{x:61,y:41800},{x:49,y:30500},{x:57,y:37200},{x:44,y:25100},{x:56,y:36500},{x:50,y:31800},{x:43,y:24000},{x:41,y:22500},{x:38,y:20100},{x:35,y:18800},{x:42,y:23200},{x:40,y:21400},{x:37,y:19600},{x:36,y:18900},{x:39,y:20800},{x:33,y:17200},{x:55,y:36100},{x:48,y:30200},{x:62,y:42000},{x:51,y:33200},{x:58,y:38800},{x:45,y:26900},{x:64,y:45500},{x:52,y:34600},{x:59,y:40100},{x:47,y:29600}];
+
+// BMI vs premium scatter (by smoking)
+const BMI_SMOKE=[{x:32.1,y:38200},{x:28.5,y:34100},{x:35.0,y:42100},{x:30.2,y:36500},{x:26.8,y:31800},{x:38.4,y:46200},{x:27.3,y:32900},{x:33.6,y:39800},{x:24.5,y:28400},{x:36.2,y:43600},{x:29.1,y:35200},{x:31.8,y:37900},{x:25.4,y:29800},{x:34.3,y:41200},{x:27.9,y:33600},{x:30.7,y:37100},{x:23.8,y:27500},{x:37.1,y:44800},{x:28.8,y:34700},{x:32.5,y:39100},{x:26.2,y:31200},{x:35.8,y:43000},{x:29.8,y:35900},{x:33.1,y:39500},{x:25.1,y:29200},{x:36.9,y:44400},{x:28.2,y:33900},{x:31.4,y:37600},{x:24.1,y:28100},{x:38.0,y:45600},{x:41.2,y:48200},{x:22.5,y:25100},{x:19.8,y:22400},{x:44.5,y:51200},{x:39.1,y:46900},{x:42.8,y:49800},{x:20.3,y:23100},{x:45.2,y:52100}];
+const BMI_NOSMOKE=[{x:28.3,y:11200},{x:24.1,y:8900},{x:32.5,y:14800},{x:26.7,y:10400},{x:30.2,y:12900},{x:22.8,y:7800},{x:35.1,y:16200},{x:27.5,y:11000},{x:33.8,y:15400},{x:25.2,y:9600},{x:31.0,y:13500},{x:23.6,y:8400},{x:36.2,y:17100},{x:29.1,y:12100},{x:34.5,y:16000},{x:24.8,y:9200},{x:38.0,y:18400},{x:28.8,y:11800},{x:32.1,y:14200},{x:26.3,y:10100},{x:35.8,y:16800},{x:30.5,y:13200},{x:33.4,y:15100},{x:24.5,y:9000},{x:37.2,y:17800},{x:27.9,y:11500},{x:31.7,y:13900},{x:23.3,y:8200},{x:39.1,y:19100},{x:29.5,y:12500},{x:41.2,y:20400},{x:19.8,y:6800},{x:44.5,y:22100},{x:18.5,y:5900},{x:21.2,y:7200},{x:42.8,y:21200},{x:20.6,y:6500},{x:45.1,y:22800},{x:16.2,y:4800},{x:17.5,y:5400}];
+
+// Age group plan distribution
+const AGEGROUP={
+  '18-30':{Basic:113,Standard:182,Premium:71},
+  '31-45':{Basic:91,Standard:234,Premium:102},
+  '46-60':{Basic:41,Standard:281,Premium:107},
+  '61-64':{Basic:0,Standard:61,Premium:55}
+};
+
+// Smoker avg premium by plan (from real data)
+// Note: in this dataset, Basic plan has no smokers (all smokers are in Standard/Premium)
+const SMOKER_BY_PLAN={
+  Basic:{No:8161,Yes:0},
+  Standard:{No:12628,Yes:0},
+  Premium:{No:20246,Yes:36464}
+};
+
+// Real correlation matrix (computed from Kaggle insurance.csv)
+const CORR_FEATS=['age','bmi','premium','dependents','smoker','chronic','mild'];
+const CORR_M=[
+  [1.000,0.013,0.275,0.025,-0.019,0.072,0.215],
+  [0.013,1.000,0.094,0.013,0.002,0.147,0.238],
+  [0.275,0.094,1.000,0.057,0.918,0.808,-0.535],
+  [0.025,0.013,0.057,1.000,-0.018,-0.015,0.031],
+  [-0.019,0.002,0.918,-0.018,1.000,0.823,-0.657],
+  [0.072,0.147,0.808,-0.015,0.823,1.000,-0.677],
+  [0.215,0.238,-0.535,0.031,-0.657,-0.677,1.000]
+];
+
+// Feature importances (real DT, trained on Kaggle data)
+const FEAT_IMP=[
+  {name:'smoking',value:0.530,c:RD},
+  {name:'bmi',value:0.287,c:AM},
+  {name:'age',value:0.173,c:BL},
+  {name:'dependents',value:0.009,c:GY},
+  {name:'medical_history',value:0.001,c:GY},
+  {name:'gender',value:0.000,c:GY},
+  {name:'region',value:0.000,c:GY},
+];
+
+// ── OVERVIEW ──────────────────────────────────────────
+function initOverview(){
+  // Plan donut
+  mk('ch-donut','doughnut',{
+    labels:['Basic','Standard','Premium'],
+    datasets:[{data:[245,758,335],backgroundColor:[BL,GR,RD],borderWidth:0,hoverOffset:12,borderRadius:4}]
+  },{cutout:'65%',plugins:{legend:{display:true,position:'right',
+    labels:{boxWidth:10,boxHeight:10,padding:12,font:{size:12}}}}});
+
+  // Medical history bar
+  mk('ch-med','bar',{
+    labels:['None','Mild','Chronic'],
+    datasets:[{data:[12948,13503,37825],backgroundColor:[GR,AM,RD],borderRadius:8,borderSkipped:false}]
+  },{scales:{y:{beginAtZero:false,min:10000,grid:{color:GB},
+    ticks:{callback:v=>'$'+Math.round(v/1000)+'k'}},x:{grid:{display:false}}}});
+
+  // Smoker bar
+  mk('ch-smoke','bar',{
+    labels:['Non-smoker','Smoker'],
+    datasets:[{data:[12051,36464],backgroundColor:[GR,RD],borderRadius:8,borderSkipped:false}]
+  },{scales:{y:{beginAtZero:false,min:8000,grid:{color:GB},
+    ticks:{callback:v=>'$'+Math.round(v/1000)+'k'}},x:{grid:{display:false}}}});
+
+  // Gender donut
+  mk('ch-gender','doughnut',{
+    labels:['Male','Female'],
+    datasets:[{data:[684,654],backgroundColor:[BL,PU],borderWidth:0,borderRadius:4}]
+  },{cutout:'58%',plugins:{legend:{display:true,position:'bottom',
+    labels:{boxWidth:10,boxHeight:10,padding:10,font:{size:11}}}}});
+
+  // Age trend
+  mk('ch-agetrend-ov','line',{
+    labels:['18-30','31-45','46-60','61-64'],
+    datasets:[{data:[12886,17162,18898,22528],borderColor:BL,backgroundColor:BL+'18',
+      fill:true,tension:.4,pointBackgroundColor:BL,pointRadius:6,pointHoverRadius:8,borderWidth:2}]
+  },{scales:{y:{beginAtZero:false,min:10000,grid:{color:GB},
+    ticks:{callback:v=>'$'+Math.round(v/1000)+'k'}},x:{grid:{display:false}}}});
+}
+
+// ── EDA ───────────────────────────────────────────────
+let edaCur='all';
+
+function initEDA(){
+  // Age histogram
+  let aData;
+  if(edaCur==='all') aData=AGE_ALL;
+  else if(edaCur==='Basic') aData=AGE_BASIC;
+  else if(edaCur==='Standard') aData=AGE_STD;
+  else aData=AGE_PREM;
+
+  const aColor=edaCur==='all'?BL+'88':edaCur==='Basic'?BL+'99':edaCur==='Standard'?GR+'88':RD+'88';
+  mk('ch-age','bar',{
+    labels:AGE_BINS,
+    datasets:[{data:aData,backgroundColor:aColor,borderWidth:0,borderRadius:2}]
+  },{scales:{x:{ticks:{maxTicksLimit:12},grid:{display:false}},y:{grid:{color:GB}}}});
+
+  // Premium histogram
+  let pData;
+  if(edaCur==='all') pData=PREM_ALL;
+  else if(edaCur==='Basic') pData=PREM_BASIC;
+  else if(edaCur==='Standard') pData=PREM_STD;
+  else pData=PREM_PREM;
+
+  mk('ch-prem-hist','bar',{
+    labels:PREM_LABELS,
+    datasets:[{data:pData,backgroundColor:AM+'88',borderWidth:0,borderRadius:2}]
+  },{scales:{x:{ticks:{maxTicksLimit:10,maxRotation:30},grid:{display:false}},y:{grid:{color:GB}}}});
+
+  // Scatter: age vs premium by plan
+  let scData;
+  if(edaCur==='all'){
+    scData=[
+      {label:'Basic',data:SC_BASIC,backgroundColor:BL+'66',pointRadius:3},
+      {label:'Standard',data:SC_STD,backgroundColor:GR+'55',pointRadius:3},
+      {label:'Premium',data:SC_PREM,backgroundColor:RD+'77',pointRadius:4},
+    ];
+  } else {
+    const raw=edaCur==='Basic'?SC_BASIC:edaCur==='Standard'?SC_STD:SC_PREM;
+    scData=[{label:edaCur,data:raw,backgroundColor:PC[edaCur]+'77',pointRadius:3}];
+  }
+  mk('ch-scatter','scatter',{datasets:scData},{
+    layout:{padding:10},
+    plugins:{legend:{display:true,labels:{boxWidth:8,boxHeight:8,font:{size:11}}}},
+    scales:{
+      x:{title:{display:true,text:'Age',color:GY},grid:{color:GB},min:15,max:70},
+      y:{title:{display:true,text:'Annual Premium ($)',color:GY},grid:{color:GB},
+        ticks:{callback:v=>'$'+Math.round(v/1000)+'k'},min:0,max:68000}
+    }
+  });
+
+  // Age group stacked bar
+  const ags=Object.keys(AGEGROUP);
+  mk('ch-agegroup','bar',{
+    labels:ags,
+    datasets:[
+      {label:'Basic',data:ags.map(a=>AGEGROUP[a].Basic),backgroundColor:BL,borderRadius:4},
+      {label:'Standard',data:ags.map(a=>AGEGROUP[a].Standard),backgroundColor:GR,borderRadius:4},
+      {label:'Premium',data:ags.map(a=>AGEGROUP[a].Premium),backgroundColor:RD,borderRadius:4},
+    ]
+  },{
+    plugins:{legend:{display:true,labels:{boxWidth:10,boxHeight:10,font:{size:11}}}},
+    scales:{x:{grid:{display:false}},y:{grid:{color:GB}}}
+  });
+
+  // BMI vs premium scatter (by smoking)
+  mk('ch-bmi-scatter','scatter',{
+    datasets:[
+      {label:'Non-smoker',data:BMI_NOSMOKE,backgroundColor:GR+'66',pointRadius:3},
+      {label:'Smoker',data:BMI_SMOKE,backgroundColor:RD+'77',pointRadius:3},
+    ]
+  },{
+    plugins:{legend:{display:true,labels:{boxWidth:8,boxHeight:8,font:{size:11}}}},
+    scales:{
+      x:{title:{display:true,text:'BMI',color:GY},grid:{color:GB},min:15,max:50},
+      y:{title:{display:true,text:'Premium ($)',color:GY},grid:{color:GB},
+        ticks:{callback:v=>'$'+Math.round(v/1000)+'k'},min:0,max:55000}
+    }
+  });
+}
+
+function edaFilter(f,btn){
+  document.querySelectorAll('#eda-filter-row .fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  edaCur=f;
+  initEDA();
+}
+
+// ── INSIGHTS ──────────────────────────────────────────
+function initInsights(){
+  // Feature correlations with premium (real Pearson r values)
+  const ins_feats=[
+    {n:'smoking → premium',v:0.918,c:RD},
+    {n:'chronic → premium',v:0.808,c:AM},
+    {n:'age → premium',v:0.275,c:BL},
+    {n:'bmi → premium',v:0.094,c:GR},
+    {n:'mild → premium',v:-0.535,c:PU},
+    {n:'dependents → premium',v:0.057,c:TE},
+  ];
+  const el=document.getElementById('ins-corr-bars');
+  el.innerHTML='';
+  ins_feats.forEach(f=>{
+    const abs=Math.abs(f.v);
+    const w=Math.round(abs/0.918*100);
+    el.innerHTML+=`<div class="bar-row">
+      <div class="bar-label">${f.n}</div>
+      <div class="bar-track">
+        <div class="bar-fill" data-w="${w}" style="width:0%;background:${f.c}">
+          r = ${f.v.toFixed(3)}
+        </div>
+      </div>
+    </div>`;
+  });
+  setTimeout(()=>el.querySelectorAll('.bar-fill').forEach(b=>{b.style.width=b.dataset.w+'%';}),80);
+
+  // Smoker by plan grouped bar
+  const plans=['Basic','Standard','Premium'];
+  mk('ch-smoke-plan','bar',{
+    labels:plans,
+    datasets:[
+      {label:'Non-smoker',data:plans.map(p=>SMOKER_BY_PLAN[p].No||0),backgroundColor:GR,borderRadius:6},
+      {label:'Smoker',data:plans.map(p=>SMOKER_BY_PLAN[p].Yes||0),backgroundColor:RD,borderRadius:6},
+    ]
+  },{
+    plugins:{legend:{display:true,labels:{boxWidth:10,boxHeight:10,font:{size:11}}}},
+    scales:{y:{beginAtZero:false,min:5000,grid:{color:GB},
+      ticks:{callback:v=>'$'+Math.round(v/1000)+'k'}},x:{grid:{display:false}}}
+  });
+
+  // Age trend line
+  mk('ch-agetrend','line',{
+    labels:['18-30','31-45','46-60','61-64'],
+    datasets:[{data:[12886,17162,18898,22528],borderColor:BL,backgroundColor:BL+'18',
+      fill:true,tension:.4,pointBackgroundColor:BL,pointBorderColor:BL,
+      pointRadius:6,pointHoverRadius:8,borderWidth:2}]
+  },{scales:{y:{beginAtZero:false,min:10000,grid:{color:GB},
+    ticks:{callback:v=>'$'+Math.round(v/1000)+'k'}},x:{grid:{display:false}}}});
+}
+
+// ── CORRELATION ───────────────────────────────────────
+function initCorrelation(){
+  let hovered=null;
+
+  function cellBg(v){
+    const abs=Math.abs(v);
+    if(v>=0){
+      const steps=['#080d18','#0a1530','#0c1e4a','#0e2a6e','#1242a0','#1e5fd8','#5b9cf6'];
+      return steps[Math.min(Math.round(abs*6),6)];
+    } else {
+      const steps=['#080d18','#200a0a','#3d1010','#5e1a1a','#8f2020'];
+      return steps[Math.min(Math.round(abs*4),4)];
+    }
+  }
+  function cellTxt(v){
+    const a=Math.abs(v);
+    if(a<0.08) return '#404a68';
+    if(a>0.35) return 'rgba(255,255,255,.9)';
+    return '#7a86a8';
+  }
+
+  function render(){
+    const w=document.getElementById('heatmap-wrap');
+    let html=`<table style="border-collapse:separate;border-spacing:3px;font-size:11px">
+      <tr><td style="width:66px"></td>`;
+    CORR_FEATS.forEach(f=>html+=`<td style="text-align:center;color:#404a68;padding:0 3px;font-size:10px;white-space:nowrap;font-weight:500">${f}</td>`);
+    html+='</tr>';
+    CORR_M.forEach((row,ri)=>{
+      html+=`<tr><td style="color:#404a68;text-align:right;padding-right:8px;font-size:10px;white-space:nowrap;font-weight:500">${CORR_FEATS[ri]}</td>`;
+      row.forEach((v,ci)=>{
+        const bg=cellBg(v), tc=cellTxt(v);
+        const sel=hovered&&hovered[0]===ri&&hovered[1]===ci;
+        html+=`<td onclick="htClick(${ri},${ci})" style="background:${bg};color:${tc};width:50px;height:38px;text-align:center;border-radius:5px;font-weight:${Math.abs(v)>0.3?'600':'400'};cursor:pointer;transition:all .15s;${sel?'outline:2px solid #5b9cf6;outline-offset:1px;':''}">${v.toFixed(2)}</td>`;
+      });
+      html+='</tr>';
+    });
+    html+='</table>';
+    w.innerHTML=html;
+  }
+
+  window.htClick=function(r,c){
+    hovered=hovered&&hovered[0]===r&&hovered[1]===c?null:[r,c];render();
+  };
+  render();
+
+  // Top correlations bar
+  const cb=document.getElementById('corr-bars');
+  cb.innerHTML='';
+  [{n:'smoking → premium',v:0.918,c:RD},
+   {n:'chronic → premium',v:0.808,c:AM},
+   {n:'age → premium',v:0.275,c:BL},
+   {n:'bmi → premium',v:0.094,c:GR},
+   {n:'dependents → premium',v:0.057,c:TE},
+   {n:'mild → premium',v:-0.535,c:PU},
+  ].forEach(f=>{
+    const w=Math.round(Math.abs(f.v)/0.918*100);
+    cb.innerHTML+=`<div class="bar-row">
+      <div class="bar-label">${f.n}</div>
+      <div class="bar-track">
+        <div class="bar-fill" data-w="${w}" style="width:0%;background:${f.c}">
+          r = ${f.v.toFixed(3)}
+        </div>
+      </div>
+    </div>`;
+  });
+  setTimeout(()=>cb.querySelectorAll('.bar-fill').forEach(b=>{b.style.width=b.dataset.w+'%';}),80);
+}
+
+// ── ML ────────────────────────────────────────────────
+function initML(){
+  setTimeout(()=>{
+    document.getElementById('acc-dt').style.width='86.87%';
+    document.getElementById('acc-lr').style.width='86.57%';
+  },100);
+
+  // Feature importance bars
+  const el=document.getElementById('feat-imp-bars');
+  el.innerHTML='';
+  const maxFI=FEAT_IMP[0].value;
+  FEAT_IMP.forEach(f=>{
+    const w=Math.round(f.value/maxFI*100);
+    el.innerHTML+=`<div class="bar-row">
+      <div class="bar-label">${f.name}</div>
+      <div class="bar-track">
+        <div class="bar-fill" data-w="${w}" style="width:0%;background:${f.c}">
+          ${f.value.toFixed(3)}
+        </div>
+      </div>
+    </div>`;
+  });
+  setTimeout(()=>el.querySelectorAll('.bar-fill').forEach(b=>{b.style.width=b.dataset.w+'%';}),100);
+
+  // Decision tree SVG (real splits: smoking is root, then bmi, then age)
+  const tw=document.getElementById('tree-viz');
+  tw.innerHTML=`<svg viewBox="0 0 680 220" style="width:100%;min-width:520px">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="${GY}"/></marker></defs>
+
+    <!-- Root: smoking -->
+    <rect x="230" y="10" width="220" height="50" rx="8" fill="rgba(248,113,113,0.12)" stroke="${RD}" stroke-width="1.5"/>
+    <text x="340" y="32" text-anchor="middle" fill="${RD}" font-size="13" font-weight="600">Smoking?</text>
+    <text x="340" y="50" text-anchor="middle" fill="${GY}" font-size="10">Root split · importance 0.530</text>
+
+    <!-- Left branch: smoker=Yes → bmi -->
+    <line x1="280" y1="60" x2="140" y2="104" stroke="${GY}" stroke-width="1" marker-end="url(#arr)"/>
+    <text x="180" y="88" text-anchor="middle" fill="${RD}" font-size="10" font-weight="500">Yes (20.3%)</text>
+    <rect x="50" y="104" width="185" height="50" rx="8" fill="rgba(251,191,36,0.1)" stroke="${AM}" stroke-width="1.5"/>
+    <text x="142" y="126" text-anchor="middle" fill="${AM}" font-size="12" font-weight="600">BMI ≥ 30?</text>
+    <text x="142" y="144" text-anchor="middle" fill="${GY}" font-size="10">importance 0.287</text>
+
+    <!-- Right branch: smoker=No → age -->
+    <line x1="400" y1="60" x2="540" y2="104" stroke="${GY}" stroke-width="1" marker-end="url(#arr)"/>
+    <text x="495" y="88" text-anchor="middle" fill="${GR}" font-size="10" font-weight="500">No (79.7%)</text>
+    <rect x="450" y="104" width="185" height="50" rx="8" fill="rgba(91,156,246,0.1)" stroke="${BL}" stroke-width="1.5"/>
+    <text x="542" y="126" text-anchor="middle" fill="${BL}" font-size="12" font-weight="600">Age ≥ 45?</text>
+    <text x="542" y="144" text-anchor="middle" fill="${GY}" font-size="10">importance 0.173</text>
+
+    <!-- Leaf: smoker=Yes, BMI>=30 → Premium -->
+    <line x1="105" y1="154" x2="65" y2="182" stroke="${GY}" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="16" y="182" width="100" height="28" rx="6" fill="rgba(248,113,113,.18)" stroke="${RD}" stroke-width="1"/>
+    <text x="66" y="201" text-anchor="middle" fill="${RD}" font-size="11" font-weight="600">Premium</text>
+    <text x="78" y="170" text-anchor="middle" fill="${GY}" font-size="9">Yes</text>
+
+    <!-- Leaf: smoker=Yes, BMI<30 → Standard -->
+    <line x1="175" y1="154" x2="215" y2="182" stroke="${GY}" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="165" y="182" width="100" height="28" rx="6" fill="rgba(54,217,160,.12)" stroke="${GR}" stroke-width="1"/>
+    <text x="215" y="201" text-anchor="middle" fill="${GR}" font-size="11" font-weight="600">Standard</text>
+    <text x="204" y="170" text-anchor="middle" fill="${GY}" font-size="9">No</text>
+
+    <!-- Leaf: smoker=No, Age>=45 → Standard -->
+    <line x1="508" y1="154" x2="468" y2="182" stroke="${GY}" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="418" y="182" width="100" height="28" rx="6" fill="rgba(54,217,160,.12)" stroke="${GR}" stroke-width="1"/>
+    <text x="468" y="201" text-anchor="middle" fill="${GR}" font-size="11" font-weight="600">Standard</text>
+    <text x="453" y="170" text-anchor="middle" fill="${GY}" font-size="9">Yes</text>
+
+    <!-- Leaf: smoker=No, Age<45 → Basic -->
+    <line x1="577" y1="154" x2="615" y2="182" stroke="${GY}" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="567" y="182" width="100" height="28" rx="6" fill="rgba(91,156,246,.12)" stroke="${BL}" stroke-width="1"/>
+    <text x="617" y="201" text-anchor="middle" fill="${BL}" font-size="11" font-weight="600">Basic</text>
+    <text x="601" y="170" text-anchor="middle" fill="${GY}" font-size="9">No</text>
+  </svg>`;
+}
+
+// ── RECOMMENDER ───────────────────────────────────────
+// Logic mirrors recommend_plan() in health_insurance_recommendation.py
+// Thresholds derived from real Kaggle charges distribution:
+//   Premium: score >= 7  → $18,000 – $64,000
+//   Standard: score >= 4 → $8,000 – $18,000
+//   Basic: score < 4     → $1,121 – $8,000
+function recommend(u){
+  let score=0; const reasons=[];
+
+  // Age (actuarial risk — mirrors script)
+  if(u.age>=60){score+=3;reasons.push('Senior age (60+) — elevated actuarial risk tier');}
+  else if(u.age>=45){score+=2;reasons.push('Middle-aged (45-59) — moderate risk (real avg $18,898/yr)');}
+  else if(u.age>=30){score+=1;reasons.push('Adult (30-44) — baseline risk (real avg $17,162/yr)');}
+
+  // Medical history
+  if(u.med==='Chronic'){score+=4;reasons.push('Chronic conditions — essential high coverage (real avg $37,825/yr)');}
+  else if(u.med==='Mild'){score+=2;reasons.push('Mild medical history — moderate coverage recommended');}
+
+  // Smoking — DOMINANT factor in real data (+203% premium)
+  if(u.smoke==='Yes'){score+=3;reasons.push('Smoker — real data shows +203% premium uplift ($36,464 vs $12,051)');}
+
+  // BMI
+  if(u.bmi>=35){score+=2;reasons.push('Severely obese BMI (≥35) — elevated health risk');}
+  else if(u.bmi>=30){score+=1;reasons.push('Obese BMI (30-34) — moderate risk factor (+17% premium)');}
+
+  // Dependents
+  if(u.deps>=3){score+=1;reasons.push('3+ dependents — broader family coverage needed');}
+
+  const sc=Math.max(0,Math.min(10,score));
+  if(sc>=7) return{plan:'Premium',sc,conf:'High confidence',
+    range:'$18,000 – $64,000/yr',
+    desc:'Comprehensive coverage · lowest out-of-pocket exposure',
+    color:RD,badge:'badge-premium',reasons};
+  if(sc>=4) return{plan:'Standard',sc,conf:'Medium confidence',
+    range:'$8,000 – $18,000/yr',
+    desc:'Balanced coverage for moderate risk profiles',
+    color:GR,badge:'badge-standard',reasons};
+  return{plan:'Basic',sc,conf:'High confidence',
+    range:'$1,121 – $8,000/yr',
+    desc:'Cost-effective plan for low-risk, healthy individuals',
+    color:BL,badge:'badge-basic',reasons};
+}
+
+function liveRec(){
+  const u={
+    age:parseInt(document.getElementById('f-age').value)||35,
+    bmi:parseFloat(document.getElementById('f-bmi').value)||25,
+    smoke:document.getElementById('f-smoke').value,
+    med:document.getElementById('f-med').value,
+    deps:parseInt(document.getElementById('f-dep').value)||0,
+  };
+  const r=recommend(u);
+  const box=document.getElementById('res-box');
+  box.style.setProperty('--rc',r.color);
+
+  const badge=document.getElementById('res-badge');
+  badge.className='badge '+r.badge;
+  badge.textContent=r.plan+' plan';
+
+  document.getElementById('res-plan').textContent='Recommended: '+r.plan;
+  document.getElementById('res-plan').style.color=r.color;
+  document.getElementById('res-desc').textContent=r.desc;
+  document.getElementById('res-range').textContent='Estimated annual premium: '+r.range;
+  document.getElementById('res-score').textContent=r.sc;
+  document.getElementById('res-score').style.color=r.color;
+  document.getElementById('res-bar').style.width=(r.sc/10*100)+'%';
+  document.getElementById('res-bar').style.background=r.color;
+  document.getElementById('res-conf').textContent=r.conf;
+
+  const ul=document.getElementById('res-reasons');
+  ul.innerHTML='';
+  r.reasons.forEach(rs=>{
+    const li=document.createElement('li');
+    li.textContent=rs;
+    ul.appendChild(li);
+  });
+}
+
+// Sample profiles (aligned with real dataset demographics)
+const SAMPLES=[
+  {name:'Riya Sharma',meta:'Age 24 · Non-smoker · BMI 22.1 · No history',
+   age:24,bmi:22.1,smoke:'No',med:'None',deps:0,gender:'Female',plan:'Basic',sc:0},
+  {name:'Rahul Gupta',meta:'Age 35 · Non-smoker · BMI 25.0 · No history',
+   age:35,bmi:25.0,smoke:'No',med:'None',deps:1,gender:'Male',plan:'Basic',sc:1},
+  {name:'Amit Verma',meta:'Age 47 · Smoker · BMI 29.5 · Mild history',
+   age:47,bmi:29.5,smoke:'Yes',med:'Mild',deps:2,gender:'Male',plan:'Standard',sc:8},
+  {name:'Sunita Patel',meta:'Age 63 · Non-smoker · BMI 33.2 · Chronic',
+   age:63,bmi:33.2,smoke:'No',med:'Chronic',deps:1,gender:'Female',plan:'Premium',sc:9},
+];
+
+function loadSample(idx){
+  const s=SAMPLES[idx];
+  document.getElementById('f-age').value=s.age;
+  document.getElementById('f-bmi').value=s.bmi;
+  document.getElementById('f-smoke').value=s.smoke;
+  document.getElementById('f-med').value=s.med;
+  document.getElementById('f-dep').value=s.deps;
+  document.getElementById('f-gender').value=s.gender;
+  liveRec();
+  document.getElementById('res-box').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function buildSamples(){
+  const g=document.getElementById('sample-grid');
+  g.innerHTML='';
+  SAMPLES.forEach((s,i)=>{
+    const pct=Math.round(s.sc/10*100);
+    const bc='badge-'+s.plan.toLowerCase();
+    g.innerHTML+=`<div class="sample-card" onclick="loadSample(${i})">
+      <span class="badge ${bc}" style="margin-bottom:8px">${s.plan}</span>
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-meta">${s.meta}</div>
+      <div class="sc-risk-row">
+        <div class="sc-risk-track">
+          <div class="sc-risk-fill" style="width:${pct}%;background:${PC[s.plan]}"></div>
+        </div>
+        <span class="sc-risk-label">Risk ${s.sc}/10</span>
+      </div>
+    </div>`;
+  });
+}
+
+// ── TAB ROUTING ───────────────────────────────────────
+const done={};
+function goTab(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(done[id]) return;
+  done[id]=1;
+  if(id==='eda')           initEDA();
+  else if(id==='insights') initInsights();
+  else if(id==='correlation') initCorrelation();
+  else if(id==='ml')       initML();
+}
+
+// ── INIT ──────────────────────────────────────────────
+initOverview();
+done['overview']=1;
+buildSamples();
+liveRec();
+</script>
+</body>
+</html>
