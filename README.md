@@ -1,16 +1,5 @@
 # 🏥 Smart Health Insurance Plan Recommendation System
-### Data Analysis Project 2026 | Batch F7
-
 ---
-
-## 👥 Team Members
-| Roll No | Name |
-|---------|------|
-| 992401030333 | Pulkeshin Goyal |
-| 992401030340 | Chetanya Mangla |
-| 992401030343 | Smarth Khurana |
-| 992401030344 | Aakash Jat |
-| 992401030345 | Kunal Sharma |
 
 ---
 
